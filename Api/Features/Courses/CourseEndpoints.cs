@@ -1,10 +1,13 @@
+
 namespace Api.Features.Courses;
 
 using Api.Common.Extensions;
 using Application.Abstractions.Messaging;
 using Application.Features.Courses.CreateCourse;
+using Application.Features.Courses.DeleteCourse;
 using Application.Features.Courses.GetAllCourses;
 using Application.Features.Courses.GetCourseById;
+using Application.Features.Courses.UpdateCourse;
 using Domain.Common;
 
 public static class CourseEndpoints
@@ -25,6 +28,14 @@ public static class CourseEndpoints
         group.MapGet("/{id:guid}", GetById)
             .WithName("GetCourseById")
             .WithSummary("Get course by ID");
+
+        group.MapPut("/{id:guid}", Update)
+            .WithName("UpdateCourse")
+            .WithSummary("Update an existing course");
+
+        group.MapDelete("/{id:guid}", Delete)
+            .WithName("DeleteCourse")
+            .WithSummary("Delete a course");
     }
 
     private static async Task<IResult> GetAll(
@@ -33,6 +44,7 @@ public static class CourseEndpoints
     {
         var query = new GetAllCoursesQuery();
         var result = await handler.HandleAsync(query, cancellationToken);
+
         return result.IsSuccess
             ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
@@ -44,8 +56,12 @@ public static class CourseEndpoints
         CancellationToken cancellationToken)
     {
         var result = await handler.HandleAsync(command, cancellationToken);
+
         return result.IsSuccess
-            ? TypedResults.CreatedAtRoute(result.Value, "GetCourseById", new { id = result.Value!.Id })
+            ? TypedResults.CreatedAtRoute(
+                result.Value,
+                "GetCourseById",
+                new { id = result.Value!.Id })
             : result.ToProblemDetails();
     }
 
@@ -56,8 +72,43 @@ public static class CourseEndpoints
     {
         var query = new GetCourseByIdQuery(id);
         var result = await handler.HandleAsync(query, cancellationToken);
+
         return result.IsSuccess
             ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
+    }
+
+    private static async Task<IResult> Update(
+        Guid id,
+        UpdateCourseCommand command,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        var handler = context.RequestServices
+            .GetRequiredService<ICommandHandler<UpdateCourseCommand, Result<UpdateCourseResponse>>>();
+
+        var updateCommand = command with { Id = id };
+        var result = await handler.HandleAsync(updateCommand, cancellationToken);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
+
+    private static async Task<IResult> Delete(
+        Guid id,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        var handler = context.RequestServices
+            .GetRequiredService<ICommandHandler<DeleteCourseCommand, Result>>();
+
+        var result = await handler.HandleAsync(
+            new DeleteCourseCommand(id),
+            cancellationToken);
+
+        return result.Match(
+            onSuccess: () => TypedResults.NoContent(),
+            onFailure: _ => result.ToProblemDetails());
     }
 }

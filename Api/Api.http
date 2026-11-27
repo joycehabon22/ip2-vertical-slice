@@ -4,3 +4,23 @@ GET {{Api_HostAddress}}/api/students/
 Accept: application/json
 
 ###
+
+POST {{Api_HostAddress}}/api/courses
+Content-Type: application/json
+
+{
+  "title": "Introduction to Programming",
+  "code": "IT101",
+  "credits": 3
+}
+
+###
+
+PUT {{Api_HostAddress}}/api/courses/0faf23c9-9cb1-4bfb-8014-b2c2ae83a419
+Content-Type: application/json
+
+{
+  "title": "Advanced Programming",
+  "code": "IT102",
+  "credits": 4
+}
